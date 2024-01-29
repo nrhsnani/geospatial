@@ -1,29 +1,38 @@
 import geopandas as gpd
 from shapely.geometry import Point
 
-def point_inside_polygon(point, polygon_gdf):
+def read_shapefile(file_path):
+    df = gpd.read_file(file_path)
+    return df
+    
+def find_boundary(point, polygon_gdf):
     point_geom = Point(point)
-    inside_polygon = False
 
-    for _, polygon in polygon_gdf.iterrows():
-        if point_geom.within(polygon['geometry']):
-            inside_polygon = True
-            break
-
-    return inside_polygon
+    for index, row in polygon_gdf.iterrows():
+        if point_geom.within(row['geometry']):
+            return row['BND_ID']
+    # If the point is not inside any polygon, return None or any other appropriate value
+    return 'N/A'
 
 # Example usage:
-shpfile_path = 'CEN_FDP_BND.shp'
-polygon_gdf = gpd.read_file(shpfile_path)
+cust_input = pd.read_csv('dataCust.csv')
 
-#point_to_check = point_row['longitude'], point_row['latitude'])
-point_to_check = Point(101.740213979999993, 3.075299640000000)
-point_gdf = gpd.GeoDataFrame(geometry=[point_to_check])
+shpfile_path = 'dataSHP.shp'
+polygon_gdf = read_shapefile(shpfile_path)
 
-# Add a new column 'BND_ID' indicating whether the point is inside the boundary
-point_gdf['inside_bnd'] = point_gdf.apply(lambda row: row['geometry'].within(polygon_gdf['geometry']).any(), axis=1)
+result = []
 
-print(point_gdf)
+for index, row in cust_input.iterrows():
+    x_longitude = row['Longitude']
+    y_latitude = row['Latitude']
+    point = Point(x_longitude, y_latitude)
+    
+    # Find the boundary_id for the point
+    bnd_id = find_boundary(point, polygon_gdf)
+    result.append(bnd_id)
+
+cust_input['Boundary_Overlap'] = result
+# cust_input
 
 def main():
     if __name__ == 'geospatial.main':
